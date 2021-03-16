@@ -62,16 +62,24 @@ class WebSocketsServiceProvider extends ServiceProvider
 
     protected function registerRoutes()
     {
-        Route::prefix(config('websockets.path'))->group(function () {
-            Route::middleware(config('websockets.middleware', [AuthorizeDashboard::class]))->group(function () {
-                Route::get('/', ShowDashboard::class);
-                Route::get('/api/{appId}/statistics', [DashboardApiController::class,  'getStatistics']);
-                Route::post('auth', AuthenticateDashboard::class);
-                Route::post('event', SendMessage::class);
+        $router = $this->app->router;
+
+        $router->group(['prefix' => config('websockets.path')], function ($router) {
+            $router->group(['middleware' => config('websockets.middleware', [AuthorizeDashboard::class])], function ($router) {
+                $router->get('/', ShowDashboard::class);
+                $router->get('/api/{appId}/statistics', [
+                    'uses' => DashboardApiController::class.'@getStatistics',
+                    'as' => DashboardApiController::class.'@getStatistics',
+                ]);
+                $router->post('auth', AuthenticateDashboard::class);
+                $router->post('event', SendMessage::class);
             });
 
-            Route::middleware(AuthorizeStatistics::class)->group(function () {
-                Route::post('statistics', [WebSocketStatisticsEntriesController::class, 'store']);
+            $router->group(['middleware' => AuthorizeStatistics::class], function ($router) {
+                $router->post('statistics', [
+                    'uses' => WebSocketStatisticsEntriesController::class.'@store',
+                    'as' => WebSocketStatisticsEntriesController::class.'@store'
+                ]);
             });
         });
 

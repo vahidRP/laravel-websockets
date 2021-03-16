@@ -30,35 +30,27 @@ class HttpStatisticsLogger implements StatisticsLogger
 
     public function webSocketMessage(ConnectionInterface $connection)
     {
-        $this
-            ->findOrMakeStatisticForAppId($connection->app->id)
-            ->webSocketMessage();
+        $this->findOrMakeStatisticForAppId($connection->app->id)->webSocketMessage();
     }
 
     public function apiMessage($appId)
     {
-        $this
-            ->findOrMakeStatisticForAppId($appId)
-            ->apiMessage();
+        $this->findOrMakeStatisticForAppId($appId)->apiMessage();
     }
 
     public function connection(ConnectionInterface $connection)
     {
-        $this
-            ->findOrMakeStatisticForAppId($connection->app->id)
-            ->connection();
+        $this->findOrMakeStatisticForAppId($connection->app->id)->connection();
     }
 
     public function disconnection(ConnectionInterface $connection)
     {
-        $this
-            ->findOrMakeStatisticForAppId($connection->app->id)
-            ->disconnection();
+        $this->findOrMakeStatisticForAppId($connection->app->id)->disconnection();
     }
 
     protected function findOrMakeStatisticForAppId($appId): Statistic
     {
-        if (! isset($this->statistics[$appId])) {
+        if(!isset($this->statistics[$appId])){
             $this->statistics[$appId] = new Statistic($appId);
         }
 
@@ -67,8 +59,8 @@ class HttpStatisticsLogger implements StatisticsLogger
 
     public function save()
     {
-        foreach ($this->statistics as $appId => $statistic) {
-            if (! $statistic->isEnabled()) {
+        foreach($this->statistics as $appId => $statistic){
+            if(!$statistic->isEnabled()){
                 continue;
             }
 
@@ -76,16 +68,18 @@ class HttpStatisticsLogger implements StatisticsLogger
                 'secret' => App::findById($appId)->secret,
             ]);
 
-            $this
-                ->browser
-                ->post(
-                    action([WebSocketStatisticsEntriesController::class, 'store']),
-                    ['Content-Type' => 'application/json'],
-                    stream_for(json_encode($postData))
-                );
+            $this->browser->post($this->action([
+                WebSocketStatisticsEntriesController::class,
+                'store'
+            ]), ['Content-Type' => 'application/json'], stream_for(json_encode($postData)));
 
             $currentConnectionCount = $this->channelManager->getConnectionCount($appId);
             $statistic->reset($currentConnectionCount);
         }
+    }
+
+    private function action($name, $parameters = [])
+    {
+        return route(implode('@', $name), $parameters);
     }
 }
